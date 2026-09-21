@@ -1,0 +1,44 @@
+recipe_version: "2"
+model: RedHatAI/Muse-Glimmer-30B-NVFP4
+model_revision: d5109a1d187c27bd1734e81844e71aa4d964e66a
+runtime: vllm
+min_nodes: 1
+container: docker.io/vllm/vllm-openai@sha256:ae1de325b8ea670288c328460a95d3807838cd254e8e9961ea7f6a741ce2c563
+
+metadata:
+  description: Qualified GB10 Solo pilot; benchmark an already-running loopback endpoint.
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.75
+  max_model_len: 65536
+  max_num_seqs: 4
+  served_model_name: RedHatAI/Muse-Glimmer-30B-NVFP4
+
+command: |
+  vllm serve {model} \
+    --revision {model_revision} \
+    --host {host} \
+    --port {port} \
+    --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} \
+    --safetensors-load-strategy eager \
+    --served-model-name {served_model_name} \
+    --generation-config auto \
+    --enable-auto-tool-choice \
+    --tool-call-parser muse_glimmer \
+    --reasoning-parser muse_glimmer
+
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192]
+    tg: [32, 128]
+    concurrency: [1, 2, 4]

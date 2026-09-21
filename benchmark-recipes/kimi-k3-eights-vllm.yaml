@@ -1,0 +1,26 @@
+recipe_version: "2"
+model: lukealonso/Kimi-K3-QSRT-K2
+model_revision: c0afd8f8f260d1225f3d0ef63aac3bc2682fc513
+runtime: vllm
+min_nodes: 8
+container: localhost/gb10sor/kimi-k3-qsrt-schema-v2-fa2-sm121@sha256:c197d0be6364afe5ab9fbe0db8bb4f56b345354bc98fcfd7cd871972aa41f740
+metadata:
+  description: Qualified switched Eights TP8 custom-vLLM profile, bounded to 8K and concurrency one.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 8
+  pipeline_parallel: 1
+  served_model_name: lukealonso/Kimi-K3-QSRT-K2
+  gpu_memory_utilization: 0.75
+  max_model_len: 8192
+  max_num_seqs: 1
+  kv_cache_dtype: fp8
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --trust-remote-code --language-model-only \
+    --tokenizer-mode kimi_k3 --reasoning-parser kimi_k3 --tool-call-parser kimi_k3 \
+    --enable-auto-tool-choice --load-format instanttensor --moe-backend b12x \
+    --linear-backend b12x --attention-backend B12X_MLA --kv-cache-dtype {kv_cache_dtype}

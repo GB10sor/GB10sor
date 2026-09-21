@@ -1,0 +1,22 @@
+ARG BASE_IMAGE=localhost/gb10sor/vllm-inkling-eights@sha256:9084124d9e245e7500a04ec6ca2d90debe8d41092236f9f2f652219caff68901
+FROM ${BASE_IMAGE}
+
+COPY inkling-xgrammar-eos.patch /opt/gb10sor/inkling-xgrammar-eos.patch
+COPY xgrammar-termination-52805.patch /opt/gb10sor/xgrammar-termination-52805.patch
+
+RUN set -eu; \
+    root=/usr/local/lib/python3.12/dist-packages; \
+    cd "$root"; \
+    echo '231f6b9d7dab5e8d68aba486fa5912db99f8bdd3f9d8842ee3e0bb12bdb7cb67  vllm/v1/structured_output/backend_xgrammar.py' | sha256sum -c -; \
+    echo '59aa2cb59932f4148b8a5204d6c5bba92cea57e7fdd2e49b8c3a709b0190bb58  /opt/gb10sor/inkling-xgrammar-eos.patch' | sha256sum -c -; \
+    echo 'ea98f2f69005678a27f4c04a830aee92d91d4fbde69655c35fd0fdc2f02fbaa0  /opt/gb10sor/xgrammar-termination-52805.patch' | sha256sum -c -; \
+    patch --batch --fuzz=0 -p1 < /opt/gb10sor/inkling-xgrammar-eos.patch; \
+    patch --batch --fuzz=0 -p1 < /opt/gb10sor/xgrammar-termination-52805.patch; \
+    echo '1545405668692bbab423ecd619d9863708040980ccb1034a5a59444d5ca0468e  vllm/v1/structured_output/backend_xgrammar.py' | sha256sum -c -; \
+    python3 -c 'from pathlib import Path; p=Path("vllm/v1/structured_output/backend_xgrammar.py"); compile(p.read_bytes(), str(p), "exec")'
+
+LABEL org.opencontainers.image.title="GB10sor full Inkling Eights grammar candidate" \
+      ai.gb10sor.parent-image-id="4524ffd6f294f4d1e5e0170dddfb5808bfac81a142e83c3207cf03d9e704571f" \
+      ai.gb10sor.canonical-base-manifest="sha256:9084124d9e245e7500a04ec6ca2d90debe8d41092236f9f2f652219caff68901" \
+      ai.gb10sor.grammar-source="vllm-project/vllm#52805@12f64b3 plus Inkling EOS correction" \
+      ai.gb10sor.qualification="candidate-only"

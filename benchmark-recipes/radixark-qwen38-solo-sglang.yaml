@@ -1,0 +1,24 @@
+recipe_version: "2"
+model: RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead
+model_revision: 009632fef96dd349150baa780c984e62e70e91fe
+runtime: sglang
+min_nodes: 1
+container: docker.io/lmsysorg/sglang@sha256:088ce12e606cb39b4fc2a20f0bd7c44c512126a29ebbb5c717a1ca0889f093c9
+metadata:
+  description: Qualified GB10 Solo SGLang NVFP4/BF16-head profile, bounded to 65K service context.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  served_model_name: RadixArk/Qwen3.8-27B-NVFP4-BF16-LMHead
+  mem_fraction_static: 0.80
+  max_model_len: 65536
+  kv_cache_dtype: fp8_e4m3
+command: |
+  python3 -m sglang.launch_server --model-path {model} --revision {model_revision} \
+    --host {host} --port {port} --served-model-name {served_model_name} \
+    --context-length {max_model_len} --kv-cache-dtype {kv_cache_dtype} \
+    --mem-fraction-static {mem_fraction_static} --attention-backend flashinfer \
+    --chunked-prefill-size 2048 --reasoning-parser qwen3 \
+    --tool-call-parser qwen3_coder --enable-multimodal --tp-size {tensor_parallel}

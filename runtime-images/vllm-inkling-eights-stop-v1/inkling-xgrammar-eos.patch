@@ -1,0 +1,22 @@
+--- a/vllm/v1/structured_output/backend_xgrammar.py
++++ b/vllm/v1/structured_output/backend_xgrammar.py
+@@ -58,7 +58,19 @@ class XgrammarBackend(StructuredOutputBackend):
+             )
+         else:
++            # Inkling's HF tokenizer has no eos_token_id. XGrammar otherwise
++            # auto-detects <|endoftext|> (199999), while the checkpoint and
++            # vLLM scheduler use <|content_model_end_sampling|> (200006).
++            # Keep this correction limited to the exact Inkling architecture.
++            hf_config = self.vllm_config.model_config.hf_config
++            stop_token_ids = None
++            if getattr(hf_config, "model_type", None) == "inkling_mm_model":
++                eos_token_id = getattr(hf_config, "eos_token_id", None)
++                if not isinstance(eos_token_id, int):
++                    raise ValueError("Inkling must declare an integer EOS token")
++                stop_token_ids = [eos_token_id]
+             tokenizer_info = xgr.TokenizerInfo.from_huggingface(
+                 self.tokenizer,
+                 vocab_size=self.vocab_size,
++                stop_token_ids=stop_token_ids,
+             )
+         self.compiler = xgr.GrammarCompiler(

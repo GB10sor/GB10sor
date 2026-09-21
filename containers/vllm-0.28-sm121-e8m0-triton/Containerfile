@@ -1,0 +1,6 @@
+FROM sha256:3e78f96a0d92c8473b96280a4f4d37e7e2f99f12461a5f19219ab70a1b6f5bb2
+
+COPY patch_triton_e8m0.py /tmp/patch_triton_e8m0.py
+RUN python3 -I -B /tmp/patch_triton_e8m0.py \
+    && rm /tmp/patch_triton_e8m0.py
+

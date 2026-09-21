@@ -1,0 +1,25 @@
+recipe_version: "2"
+model: nvidia/DeepSeek-V4-Flash-0731-NVFP4
+model_revision: f1caa71142bd0be02f728c79f75042ac1e461579
+runtime: vllm
+min_nodes: 2
+container: localhost/gb10sor/vllm-0.28-deepseek-v4-sm121-v3-sealed@sha256:e2fe80867b91cae3239c2d3e86fb37b4538de2e0edf378894facd76509c69bad
+metadata:
+  description: Exact bounded Deuces-direct benchmark definition for the qualified NVIDIA 0731 checkpoint.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: nvidia/DeepSeek-V4-Flash-0731-NVFP4
+  gpu_memory_utilization: 0.80
+  max_model_len: 65536
+  max_num_seqs: 4
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --enable-expert-parallel --trust-remote-code --tokenizer-mode deepseek_v4 \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --kv-cache-dtype fp8 --block-size 256 \
+    --linear-backend triton --reasoning-parser deepseek_v4 \
+    --tool-call-parser deepseek_v4 --enable-auto-tool-choice

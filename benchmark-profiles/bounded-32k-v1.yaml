@@ -1,0 +1,26 @@
+framework: llama-benchy
+metadata:
+  description: Local bounded qualification profile; not an Arena submission profile.
+args:
+  depth: [0, 4096, 8192, 16384, 32768]
+  pp: [2048]
+  tg: [128]
+  concurrency: [1, 2, 4]
+  prefix_caching: true
+  runs: 3
+schedule:
+  - {depth: 8192, concurrency: 2}
+  - {depth: 4096, concurrency: 4}
+  - {depth: 16384, concurrency: 1}
+  - {depth: 0, concurrency: 4}
+  - {depth: 32768, concurrency: 1}
+  - {depth: 8192, concurrency: 4}
+  - {depth: 4096, concurrency: 1}
+  - {depth: 16384, concurrency: 2}
+  - {depth: 0, concurrency: 1}
+  - {depth: 32768, concurrency: 2}
+  - {depth: 8192, concurrency: 1}
+  - {depth: 4096, concurrency: 2}
+  - {depth: 16384, concurrency: 4}
+  - {depth: 0, concurrency: 2}
+  - {depth: 32768, concurrency: 4}

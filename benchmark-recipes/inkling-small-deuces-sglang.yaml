@@ -1,0 +1,58 @@
+recipe_version: "2"
+model: thinkingmachines/Inkling-Small-NVFP4
+model_revision: b6a99534467840620d411e4cd4ad5819b2610d9c
+runtime: sglang
+min_nodes: 2
+container: ghcr.io/drowzeys/inkling-sglang-gb10@sha256:079775a8deb415d16b89a505df0795987add3395e6e63a42a885a712ccb1ddc3
+
+metadata:
+  description: Qualified GB10 Deuces-direct Inkling Small endpoint; benchmark locally with upload disabled.
+  draft_model: RadixArk/Inkling-Small-DSpark-Preview
+  draft_model_revision: fcc210dcf244cc2f550ef1f75507eb4146c17a57
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: thinkingmachines/Inkling-Small-NVFP4
+  mem_fraction_static: 0.85
+  max_model_len: 1048576
+
+command: |
+  python3 -m sglang.launch_server \
+    --model-path {model} \
+    --revision {model_revision} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --tp-size {tensor_parallel} \
+    --context-length {max_model_len} \
+    --quantization modelopt_fp4 \
+    --attention-backend triton \
+    --page-size 1 \
+    --fp4-gemm-backend flashinfer_trtllm \
+    --moe-runner-backend marlin \
+    --mamba-radix-cache-strategy extra_buffer \
+    --mem-fraction-static {mem_fraction_static} \
+    --max-running-requests 16 \
+    --chunked-prefill-size 8192 \
+    --reasoning-parser inkling \
+    --tool-call-parser inkling \
+    --speculative-algorithm DSPARK \
+    --speculative-draft-model-path /draft-model \
+    --speculative-draft-model-quantization unquant \
+    --speculative-dspark-block-size 7 \
+    --disable-prefill-cuda-graph \
+    --disable-piecewise-cuda-graph \
+    --triton-attention-reduce-in-fp32 \
+    --kv-cache-dtype fp4_mx_block16
+
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192, 32768]
+    tg: [32, 128]
+    concurrency: [1, 2, 4]

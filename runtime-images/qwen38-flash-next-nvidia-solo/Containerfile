@@ -1,0 +1,12 @@
+FROM docker.io/vllm/vllm-openai:nightly-8a728663c1c3eeace834a95f5654fa653cc1998c
+
+COPY single-spark-vllm-tp1/patch/ple_layer.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/ple_layer.py
+COPY single-spark-vllm-tp1/patch/ple_mmap.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/ops/ple_mmap.py
+COPY single-spark-vllm-tp1/patch/model_state.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/model_state.py
+COPY single-spark-vllm-tp1/patch/mtp_draft_vocab.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/mtp.py
+COPY single-spark-vllm-tp1/patch/upstream-overlays/ops_ple.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/ops/ple.py
+COPY single-spark-vllm-tp1/patch/upstream-overlays/ops_qsa.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/ops/qsa.py
+COPY single-spark-vllm-tp1/patch/upstream-overlays/qsa.py /usr/local/lib/python3.12/dist-packages/vllm/models/qwen4_exp/nvidia/qsa.py
+COPY single-spark-vllm-tp1/patch/upstream-overlays/platforms_interface.py /usr/local/lib/python3.12/dist-packages/vllm/platforms/interface.py
+COPY single-spark-vllm-tp1/patch/upstream-overlays/modelopt.py /usr/local/lib/python3.12/dist-packages/vllm/model_executor/layers/quantization/modelopt.py
+COPY single-spark-vllm-tp1/patch/compilation.py /usr/local/lib/python3.12/dist-packages/vllm/config/compilation.py

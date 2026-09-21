@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+
+ARG BASE_IMAGE=docker.io/vllm/vllm-openai@sha256:b0501f99fec5136f248f78d5850977a2ec32d55cd9a665f4a9ffef24cbdf7fe5
+FROM ${BASE_IMAGE}
+
+ARG BASE_IMAGE
+ARG TRANSFORMERS_VERSION=5.16.1
+ARG NOPE_PATCH_COMMIT=36bdcfe7bd36ed6df3381d94efdf37e895446b4c
+
+LABEL org.opencontainers.image.title="GB10sor NVIDIA GLM-5.3 Flash Quads NoPE candidate" \
+      org.opencontainers.image.description="Pinned Transformers, vLLM NoPE sparse-MLA, and runtime-only index-topk overlays on NVIDIA's ARM64 CUDA 13.0 GLM-5.3 Flash image" \
+      org.opencontainers.image.source="https://huggingface.co/nvidia/GLM-5.3-Flash-NVFP4" \
+      org.opencontainers.image.revision="385dce36bcee42309924a5ece951a96db3dce7f2" \
+      ai.gb10sor.base-image="${BASE_IMAGE}" \
+      ai.gb10sor.transformers-version="${TRANSFORMERS_VERSION}" \
+      ai.gb10sor.nope-patch-commit="${NOPE_PATCH_COMMIT}" \
+      ai.gb10sor.qualification="candidate-not-model-qualified"
+
+COPY wheels/transformers-5.16.1-py3-none-any.whl /opt/gb10sor/wheels/
+COPY patches/vllm-pr-53969.patch /opt/gb10sor/patches/
+COPY entrypoints/gb10sor-vllm-glm53-nope /usr/local/bin/
+
+RUN python3 -m pip install --no-cache-dir --no-index --no-deps --force-reinstall \
+      /opt/gb10sor/wheels/transformers-5.16.1-py3-none-any.whl \
+    && patch --batch --forward -p1 -d /usr/local/lib/python3.12/dist-packages \
+      < /opt/gb10sor/patches/vllm-pr-53969.patch \
+    && python3 -c 'import importlib.metadata as m; assert m.version("transformers") == "5.16.1"; assert m.version("vllm") == "0.28.1rc1.dev580+g385dce36b"' \
+    && grep -q 'self._nope_pad = self.qk_rope_head_dim == 0' \
+      /usr/local/lib/python3.12/dist-packages/vllm/v1/attention/backends/mla/flashinfer_mla_sparse_sm120.py \
+    && chmod 0555 /usr/local/bin/gb10sor-vllm-glm53-nope \
+    && rm -rf /opt/gb10sor/wheels /opt/gb10sor/patches

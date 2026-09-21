@@ -1,0 +1,37 @@
+recipe_version: "2"
+model: incoai/GLM-5.3-NVFP4
+model_revision: 54e52520606f96b3d9fc84088ad22882a61648ac
+runtime: sglang
+min_nodes: 8
+container: docker.io/lmsysorg/sglang@sha256:4cba07b0c68725991890c64843403396effb7faa39ac47261166b2299095c513
+
+metadata:
+  description: Qualified switched Eights TP8 SGLang profile, bounded to 16K and concurrency one.
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 8
+  pipeline_parallel: 1
+  served_model_name: incoai/GLM-5.3-NVFP4
+  mem_fraction_static: 0.75
+  max_model_len: 16384
+
+command: |
+  python3 -m sglang.launch_server \
+    --model-path {model} \
+    --revision {model_revision} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --tp {tensor_parallel} \
+    --trust-remote-code \
+    --quantization modelopt_fp4 \
+    --reasoning-parser glm45 \
+    --tool-call-parser glm47 \
+    --chunked-prefill-size 8192 \
+    --mem-fraction-static {mem_fraction_static} \
+    --context-length {max_model_len} \
+    --max-running-requests 1 \
+    --disable-cuda-graph \
+    --disable-shared-experts-fusion

@@ -1,0 +1,11 @@
+--- a/models/inkling/nvidia/ops/fa4_rel_attention.py
++++ b/models/inkling/nvidia/ops/fa4_rel_attention.py
+@@ -79,7 +79,7 @@ def inkling_fa4_num_splits(
+ ) -> int:
+     """Return the split-KV cap for Inkling relative attention."""
+     capability = current_platform.get_device_capability()
+-    if capability is not None and capability.major == 9:
++    if capability is not None and capability.major in (9, 12):
+         return 1
+     if is_local:
+         return 1

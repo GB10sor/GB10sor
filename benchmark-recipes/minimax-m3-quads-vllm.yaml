@@ -1,0 +1,24 @@
+recipe_version: "2"
+model: nvidia/MiniMax-M3-NVFP4
+model_revision: 901464083161bf8612a29ff7ad29914cd4ab4a85
+runtime: vllm
+min_nodes: 4
+container: docker.io/vllm/vllm-openai@sha256:2a7cde230b59f3ce6cab33dd245ba6bee41aa87b38c9fe84f966ff24016813ce
+metadata:
+  description: Qualified switched Quads TP4 profile, bounded to 16K service context and concurrency one.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 4
+  pipeline_parallel: 1
+  served_model_name: nvidia/MiniMax-M3-NVFP4
+  gpu_memory_utilization: 0.75
+  max_model_len: 16384
+  max_num_seqs: 1
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} --kv-cache-memory-bytes 4294967296 \
+    --max-model-len {max_model_len} --max-num-seqs {max_num_seqs} --block-size 128 \
+    --tool-call-parser minimax_m3 --reasoning-parser minimax_m3 \
+    --enable-auto-tool-choice --trust-remote-code

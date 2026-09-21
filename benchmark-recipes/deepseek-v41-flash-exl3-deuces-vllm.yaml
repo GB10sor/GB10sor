@@ -1,0 +1,33 @@
+recipe_version: "2"
+model: Mia-AiLab/DeepSeek-V4.1-Flash-EXL3-2.9bpw
+model_revision: 64ba41b6c916a587db06eae2e19b7845f7be6e6b
+runtime: vllm
+min_nodes: 2
+container: ghcr.io/miaai-lab/deepseek-v4.1-flash-exl3-2x-dgx-sparks@sha256:2f0cf3adc0f989c1d446be274df864eb799630175f604c3b22b71b7205971dce
+metadata:
+  description: Qualified Deuces-direct TP2 profile, measured at a comparable bounded 32K/C1 local schedule.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: DeepSeek-v4.1-Flash-EXL3
+  gpu_memory_utilization: 0.88
+  max_model_len: 600000
+  max_num_seqs: 2
+  max_num_batched_tokens: 1024
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --pipeline-parallel-size {pipeline_parallel} --distributed-executor-backend mp \
+    --quantization exl3 --tokenizer-mode deepseek_v41 \
+    --tool-call-parser deepseek_v41 --reasoning-parser deepseek_v41 \
+    --enable-auto-tool-choice --enable-prefix-caching --no-enable-flashinfer-autotune \
+    --hf-overrides '{"engram_table_dir":"/engram-src"}' \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --max-num-batched-tokens {max_num_batched_tokens} \
+    --kv-cache-memory-bytes 2684354560 --block-size 64 \
+    --speculative-config '{"method":"dspark","num_speculative_tokens":3}' \
+    --chat-template /opt/dsv41/chat_template.jinja \
+    --default-chat-template-kwargs '{"enable_thinking":false}' \
+    --language-model-only --cudagraph-capture-sizes 1 2 3 4 6 8 12 18 24

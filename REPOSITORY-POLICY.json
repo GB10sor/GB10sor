@@ -1,0 +1,8 @@
+{
+  "edition": "standard",
+  "expectedProfiles": 28,
+  "historyPolicy": "fresh-publication-history",
+  "privateConfigurationTracked": false,
+  "rawEvidenceTracked": false,
+  "restrictedDeploymentMaterials": false
+}

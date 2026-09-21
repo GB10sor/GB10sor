@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+
+ARG BASE_IMAGE=nvcr.io/nvidia/tensorrt-llm/release@sha256:a6a9de9351d0ae122e852d2ddeee816302a90f6e528d64f06c8d5e6a2fbc9ad3
+FROM ${BASE_IMAGE}
+
+ARG BASE_IMAGE
+ARG TRTLLM_UPSTREAM_FIX=e1e6bcca3b7c
+
+LABEL org.opencontainers.image.title="GB10sor TensorRT-LLM rc26 Qwen3.8 mixed-precision fix" \
+      org.opencontainers.image.source="https://github.com/NVIDIA/TensorRT-LLM" \
+      org.opencontainers.image.revision="${TRTLLM_UPSTREAM_FIX}" \
+      ai.gb10sor.base-image="${BASE_IMAGE}" \
+      ai.gb10sor.patch-id="qwen38-modelopt-ple-fp8-e1e6bcca3b7c" \
+      ai.gb10sor.qualification="candidate-not-model-qualified"
+
+COPY apply-upstream-qwen38-mixed-precision-fix.py /opt/gb10sor/apply-upstream-qwen38-mixed-precision-fix.py
+
+# Backport only NVIDIA/TensorRT-LLM#18823 from the exact rc26 image. The
+# patcher refuses to touch any source tree whose input hashes differ.
+RUN python3 /opt/gb10sor/apply-upstream-qwen38-mixed-precision-fix.py \
+    && python3 -m py_compile \
+      /usr/local/lib/python3.12/dist-packages/tensorrt_llm/_torch/modules/qwen4_exp/ple.py \
+      /usr/local/lib/python3.12/dist-packages/tensorrt_llm/_torch/models/modeling_qwen4_exp.py \
+    && rm /opt/gb10sor/apply-upstream-qwen38-mixed-precision-fix.py
+

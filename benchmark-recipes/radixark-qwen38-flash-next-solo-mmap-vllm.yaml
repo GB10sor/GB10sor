@@ -1,0 +1,35 @@
+recipe_version: "2"
+model: RadixArk/Qwen3.8-Flash-Next-NVFP4
+model_revision: 7b719225242aacd3dbd3f9407468c2ee9a9d2594
+runtime: vllm
+min_nodes: 1
+container: localhost/gb10sor/qwen38-flash-next-solo-mmap@sha256:e61397b7e3ff32b63da8e6a6be628bc988021c6311dd9efb0c3971d62eab1f38
+metadata:
+  description: Exact benchmark definition for the pinned PLE-mmap Solo runtime; benchmark an already-running loopback endpoint.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.85
+  max_model_len: 262144
+  max_num_seqs: 2
+  served_model_name: RadixArk/Qwen3.8-Flash-Next-NVFP4
+command: |
+  VLLM_PLE_MMAP=1 VLLM_PLE_MMAP_WORKERS=32 VLLM_PLE_MMAP_PREWARM=1 \
+  VLLM_USE_FLASHINFER_SAMPLER=1 vllm serve {model} --revision {model_revision} \
+    --host {host} --port {port} --served-model-name {served_model_name} \
+    --tensor-parallel-size {tensor_parallel} --gpu-memory-utilization {gpu_memory_utilization} \
+    --max-model-len {max_model_len} --max-num-seqs {max_num_seqs} \
+    --load-format safetensors --no-enable-prefix-caching --enable-chunked-prefill \
+    --max-num-batched-tokens 8192 --no-enable-flashinfer-autotune \
+    --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3 \
+    --speculative-config '{"method":"mtp","num_speculative_tokens":3}'
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192]
+    tg: [32, 128]
+    concurrency: [1, 2]

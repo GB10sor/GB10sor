@@ -1,0 +1,17 @@
+FROM docker.io/vllm/vllm-openai@sha256:2a7cde230b59f3ce6cab33dd245ba6bee41aa87b38c9fe84f966ff24016813ce
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28.0 with FlashInfer 0.6.17 CUDA 13.0" \
+      org.opencontainers.image.description="Candidate ARM64 runtime for DeepSeek V4 DSpark qualification on GB10" \
+      ai.gb10sor.base-image-digest="sha256:2a7cde230b59f3ce6cab33dd245ba6bee41aa87b38c9fe84f966ff24016813ce" \
+      ai.gb10sor.vllm-version="0.28.0" \
+      ai.gb10sor.flashinfer-version="0.6.17" \
+      ai.gb10sor.cuda-version="13.0"
+
+COPY wheels/ /opt/gb10sor/wheels/
+
+RUN python3 -m pip install --no-cache-dir --no-index --no-deps --force-reinstall \
+      /opt/gb10sor/wheels/flashinfer_python-0.6.17-py3-none-any.whl \
+      /opt/gb10sor/wheels/flashinfer_cubin-0.6.17-py3-none-any.whl \
+      /opt/gb10sor/wheels/flashinfer_jit_cache-0.6.17+cu130-cp39-abi3-manylinux_2_28_aarch64.whl \
+    && python3 -c 'import importlib.metadata as m; assert m.version("vllm") == "0.28.0"; assert m.version("torch") == "2.13.0+cu130"; assert m.version("flashinfer-python") == "0.6.17"; assert m.version("flashinfer-cubin") == "0.6.17"; assert m.version("flashinfer-jit-cache") == "0.6.17+cu130"' \
+    && rm -rf /opt/gb10sor/wheels

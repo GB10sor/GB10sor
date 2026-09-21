@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "name": "NVIDIA TensorRT",
+    "productVersion": "11.2.1",
+    "pythonPackageVersion": "11.2.1.2",
+    "cudaVersion": "13.3.1.008",
+    "architecture": "aarch64",
+    "pythonAbi": "cp312"
+  },
+  "base": {
+    "image": "nvcr.io/nvidia/cuda-dl-base@sha256:3c4abc135ab60255ace81717a2eb41c313ebe2c344c8a57099aa728c76dde454",
+    "resolvedFromTag": "26.07-cuda13.3-devel-ubuntu24.04"
+  },
+  "license": {
+    "name": "NVIDIA Software License Agreement and TensorRT Supplement",
+    "url": "https://docs.nvidia.com/deeplearning/tensorrt/sla/index.html",
+    "baseImageTermsApply": true,
+    "baseImageCatalogUrl": "https://catalog.ngc.nvidia.com/orgs/nvidia/containers/cuda-dl-base",
+    "acceptanceRequired": true,
+    "redistributionRequiresReview": true
+  },
+  "artifacts": [
+    {
+      "distribution": "tensorrt-cu13-libs",
+      "filename": "tensorrt_cu13_libs-11.2.1.2-py3-none-manylinux_2_35_aarch64.whl",
+      "url": "https://pypi.nvidia.com/tensorrt-cu13-libs/tensorrt_cu13_libs-11.2.1.2-py3-none-manylinux_2_35_aarch64.whl",
+      "sha256": "ef6f7f89aadc6ab5417b40d4b9dacb308af2bf952fb1a29b987dac8d29006b22"
+    },
+    {
+      "distribution": "tensorrt-cu13-bindings",
+      "filename": "tensorrt_cu13_bindings-11.2.1.2-cp312-none-manylinux_2_35_aarch64.whl",
+      "url": "https://pypi.nvidia.com/tensorrt-cu13-bindings/tensorrt_cu13_bindings-11.2.1.2-cp312-none-manylinux_2_35_aarch64.whl",
+      "sha256": "994c8d528ef55a4d3a1416f485499d7210c2e903f3c9c93cc721501786549c58"
+    },
+    {
+      "distribution": "tensorrt-cu13",
+      "filename": "tensorrt_cu13-11.2.1.2.tar.gz",
+      "url": "https://pypi.nvidia.com/tensorrt-cu13/tensorrt_cu13-11.2.1.2.tar.gz",
+      "sha256": "5a15c04615c59338d8f95205f5a24e7dfe18086d4a3449ddd5992e75f0f829b9"
+    },
+    {
+      "distribution": "tensorrt",
+      "filename": "tensorrt-11.2.1.2.tar.gz",
+      "url": "https://pypi.nvidia.com/tensorrt/tensorrt-11.2.1.2.tar.gz",
+      "sha256": "adf00e5ee6d87e1bf991dfefad64f939b5639712ca79aac1d6c3cc88935c8088"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+
+ARG BASE_IMAGE=docker.io/lmsysorg/sglang@sha256:73f9294b78e38d8cc297bfed16daec8ac192b126a2d1fb9055e259a632c68f00
+FROM ${BASE_IMAGE}
+
+ARG BASE_IMAGE
+ARG RECIPE_COMMIT=b3bd95fdedaa9ba60e2a344486b37cb9c348d1b8
+ARG SGLANG_COMMIT=033446bb05f35c0943aed2750c443077ffc0b92c
+ARG SGLANG_PATCH_COMMIT=c4d5d45e506dcd978a65661a503eda1a272c39a4
+
+LABEL org.opencontainers.image.title="GB10sor GLM-5.3 Flash DFlash2 SGLang candidate" \
+      org.opencontainers.image.source="https://github.com/beastllama/GLM-5.3-Flash-DFlash2-SGLang-2x-DGX-Spark" \
+      org.opencontainers.image.revision="${SGLANG_COMMIT}" \
+      ai.gb10sor.base-image="${BASE_IMAGE}" \
+      ai.gb10sor.recipe-commit="${RECIPE_COMMIT}" \
+      ai.gb10sor.sglang-patch-commit="${SGLANG_PATCH_COMMIT}" \
+      ai.gb10sor.patch-id="glm53-flash-dflash2-gb10-tilelang-v1" \
+      ai.gb10sor.qualification="candidate-not-model-qualified"
+
+COPY glm5_next.py /sgl-workspace/sglang/python/sglang/srt/models/glm5_next.py
+COPY tilelang_kernel.py /sgl-workspace/sglang/python/sglang/kernels/ops/attention/dsa/tilelang_kernel.py
+
+ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
+CMD ["/bin/bash"]

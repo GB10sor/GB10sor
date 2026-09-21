@@ -1,0 +1,16 @@
+framework: llama-benchy
+metadata:
+  description: Exact qualified MiaAI DeepSeek V4.1 EXL3 Deuces-direct comparison boundary; local evidence only, not an Arena submission.
+args:
+  depth: [0, 4096, 8192, 16384, 30551]
+  pp: [2048]
+  tg: [128]
+  concurrency: [1]
+  prefix_caching: false
+  runs: 3
+schedule:
+  - {depth: 0, concurrency: 1}
+  - {depth: 4096, concurrency: 1}
+  - {depth: 8192, concurrency: 1}
+  - {depth: 16384, concurrency: 1}
+  - {depth: 30551, concurrency: 1}

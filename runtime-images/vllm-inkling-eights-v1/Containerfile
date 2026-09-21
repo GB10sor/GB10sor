@@ -1,0 +1,32 @@
+FROM docker.io/eugr/spark-vllm@sha256:2858d85ca468c917fa27575675da8a4d48969c743eb2730af694f077e48b0019
+
+# This is an offline, CPU-only image build. Runtime CUDA/SM121 checks belong
+# to a separate GB10 canary and are not waived for qualification.
+COPY inkling-sm12-paged-kv /opt/gb10sor/inkling-sm12-paged-kv
+COPY inkling-memory-safety.patch /opt/gb10sor/inkling-memory-safety.patch
+
+RUN set -eu; \
+    cd /opt/gb10sor; \
+    manifest=$(find inkling-sm12-paged-kv -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1); \
+    test "$manifest" = f684bf79e477c06b16da5bf22824f2a178d991c2073c2a242ffec61df98b0657; \
+    root=/usr/local/lib/python3.12/dist-packages; \
+    fa="$root/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py"; \
+    qkvr="$root/vllm/models/inkling/nvidia/ops/qkvr_prep.py"; \
+    echo "4b59c675fada2bfae0528a3c9d0097f1e0f674aa40d9a85f10a404715da1bd8a  $fa" | sha256sum -c -; \
+    echo "0e0d513903d635a83e234aff593d53c97f9392b49738bc6d1ad5b368590f7c52  $qkvr" | sha256sum -c -; \
+    echo 'c171eb4d2d696d6ce217ceb43af18dc7a6ddd9ccab8e2a50e53b22686dbcb780  /opt/gb10sor/inkling-memory-safety.patch' | sha256sum -c -; \
+    INKLING_SM12_MOD_SKIP_RUNTIME_CHECK=1 /opt/gb10sor/inkling-sm12-paged-kv/run.sh; \
+    echo "57757877856598d5b9264f32ccb4d2345451d70f258ddba697b0c5587b2a4beb  $fa" | sha256sum -c -; \
+    cd "$root"; \
+    patch --batch --fuzz=0 -p1 < /opt/gb10sor/inkling-memory-safety.patch; \
+    echo 'b2c7d7d31f1dda3d9100f73e99a67da455dd8fe4c30915776de6946b514e8d76  vllm/models/inkling/nvidia/ops/fa4_rel_attention.py' | sha256sum -c -; \
+    echo 'af5bb250bce44afa915e2ceba6a09c00d198b3c0bfc59b7b397acb7ea11bad58  vllm/models/inkling/nvidia/ops/qkvr_prep.py' | sha256sum -c -; \
+    python3 -m py_compile vllm/models/inkling/nvidia/ops/fa4_rel_attention.py vllm/models/inkling/nvidia/ops/qkvr_prep.py vllm/third_party/inkling_sm120_fa4_adapter.py
+
+LABEL org.opencontainers.image.title="GB10sor full Inkling Eights runtime candidate" \
+      org.opencontainers.image.description="Pinned ARM64 vLLM plus SM12 paged-KV and memory-safety fixes; GPU qualification pending" \
+      org.opencontainers.image.source="https://github.com/eugr/spark-vllm-docker" \
+      ai.gb10sor.base.manifest="sha256:2858d85ca468c917fa27575675da8a4d48969c743eb2730af694f077e48b0019" \
+      ai.gb10sor.paged-kv-source="eugr/spark-vllm-docker@4b2ea1ea0f5ccf2dd25f8af7a822d69ae3a77e08" \
+      ai.gb10sor.memory-safety-source="vllm-project/vllm#49681@ab318def5549e3f25d5b087a6923e77631a8e22b" \
+      ai.gb10sor.qualification="candidate-only"

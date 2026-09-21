@@ -1,0 +1,66 @@
+recipe_version: "2"
+model: LibertAIDAI/GLM-5.3-Flash-NVFP4
+model_revision: 357b45cc73a07a541cede88861f7736c9487ebf7
+runtime: sglang
+min_nodes: 2
+container: localhost/gb10sor/sglang-glm53-flash-dflash2@sha256:33cffa9bb1a3f91002c4705f25fc27eaecb179c5d013603a283124b09202333f
+
+metadata:
+  description: GB10 Deuces-direct GLM-5.3-Flash endpoint with the pinned DFlash2 drafter; benchmark locally with upload disabled.
+  draft_model: incoai/GLM-5.3-Flash-DFlash2
+  draft_model_revision: 7d74cdd881ed7e32c31175984a67823127b66cfe
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: LibertAIDAI/GLM-5.3-Flash-NVFP4
+  mem_fraction_static: 0.90
+  max_model_len: 65536
+
+command: |
+  python3 -m sglang.launch_server \
+    --model-path {model} \
+    --revision {model_revision} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --tp {tensor_parallel} \
+    --trust-remote-code \
+    --attention-backend dsa \
+    --dsa-prefill-backend tilelang \
+    --dsa-decode-backend tilelang \
+    --moe-runner-backend flashinfer_cutlass \
+    --kv-cache-dtype bfloat16 \
+    --disable-shared-experts-fusion \
+    --reasoning-parser glm45 \
+    --tool-call-parser glm47 \
+    --speculative-algorithm DFLASH \
+    --speculative-draft-model-path /draft-model \
+    --speculative-num-draft-tokens 8 \
+    --chat-template /model/chat_template.jinja \
+    --mem-fraction-static {mem_fraction_static} \
+    --context-length {max_model_len} \
+    --max-running-requests 8 \
+    --max-total-tokens 65536 \
+    --mamba-full-memory-ratio 2 \
+    --max-mamba-cache-size 40 \
+    --mamba-ssm-dtype bfloat16 \
+    --disable-flashinfer-autotune \
+    --stream-interval 1 \
+    --sleep-on-idle \
+    --chunked-prefill-size 2048 \
+    --disable-cuda-graph
+
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048]
+    depth: [0, 4096, 8192, 16384, 32768]
+    prefix_caching: true
+    tg: [128]
+    concurrency: [1, 2, 4]
+    runs: 3

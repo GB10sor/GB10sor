@@ -1,0 +1,14 @@
+result
+result-*
+.direnv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.DS_Store
+._*
+secrets/
+private-evidence/
+*.local.json
+*.local.env

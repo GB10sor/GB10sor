@@ -1,0 +1,36 @@
+recipe_version: "2"
+model: nvidia/Qwen3.8-Flash-Next-NVFP4
+model_revision: fab0aecb760cec45227f6656abcaafa11abca87a
+runtime: vllm
+min_nodes: 2
+container: localhost/gb10sor/qwen38fn-vllm-d83f10@sha256:d9989463491cc5caa921ac28b5fc552c6b535c8127ced7a048f4203015775d14
+metadata:
+  description: Exact benchmark definition for the qualified NVIDIA Qwen3.8 Flash-Next Deuces-direct vLLM profile.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.70
+  kv_cache_dtype: fp8_e4m3
+  max_model_len: 262144
+  max_num_seqs: 6
+  served_model_name: nvidia/Qwen3.8-Flash-Next-NVFP4
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --trust-remote-code --quantization modelopt \
+    --kv-cache-dtype {kv_cache_dtype} --enable-chunked-prefill --max-num-batched-tokens 4096 \
+    --no-enable-prefix-caching --no-enable-flashinfer-autotune \
+    --enable-auto-tool-choice --tool-call-parser qwen3_xml --reasoning-parser qwen3 \
+    --speculative-config '{"method":"mtp","num_speculative_tokens":3}' \
+    --compilation-config '{"mode":0,"cudagraph_mode":"FULL_DECODE_ONLY"}'
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192]
+    tg: [32, 128]
+    concurrency: [1, 2, 4]

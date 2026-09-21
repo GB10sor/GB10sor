@@ -1,0 +1,33 @@
+recipe_version: "2"
+model: nvidia/Qwen3.8-Flash-Next-NVFP4
+model_revision: fab0aecb760cec45227f6656abcaafa11abca87a
+runtime: vllm
+min_nodes: 1
+container: localhost/gb10sor/qwen38-flash-next-nvidia-solo@sha256:652696cc057dbe24653572b9978eae094b1dfc9d2cabde863cfbf260f64609ac
+metadata:
+  description: Qualified NVIDIA GB10 Solo runtime; benchmark an already-running loopback endpoint.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 1
+  pipeline_parallel: 1
+  gpu_memory_utilization: 0.80
+  max_model_len: 262144
+  max_num_seqs: 6
+  served_model_name: nvidia/Qwen3.8-Flash-Next-NVFP4
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --load-format safetensors --quantization modelopt \
+    --kv-cache-dtype fp8_e4m3 --enable-chunked-prefill --max-num-batched-tokens 4096 \
+    --no-enable-prefix-caching --no-enable-flashinfer-autotune \
+    --enable-auto-tool-choice --tool-call-parser qwen3_xml --reasoning-parser qwen3
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192]
+    tg: [32, 128]
+    concurrency: [1, 2, 4]

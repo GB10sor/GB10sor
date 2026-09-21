@@ -1,0 +1,26 @@
+recipe_version: "2"
+model: RadixArk/Qwen3.8-Flash-Next-NVFP4
+model_revision: 7b719225242aacd3dbd3f9407468c2ee9a9d2594
+runtime: sglang
+min_nodes: 2
+container: localhost/gb10sor/qwen38-direct@sha256:cb4c5f74f2f506c255fd220dd4d1f7c26904d0b6d83c9f7f23d6f393cc619f0e
+metadata:
+  description: Exact bounded Deuces-direct benchmark definition for the qualified RadixArk SGLang profile.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: RadixArk/Qwen3.8-Flash-Next-NVFP4
+  mem_fraction_static: 0.68
+  max_model_len: 65536
+  max_num_seqs: 2
+command: |
+  python3 -m sglang.launch_server --model-path {model} --revision {model_revision} \
+    --host {host} --port {port} --served-model-name {served_model_name} \
+    --tp-size {tensor_parallel} --quantization modelopt_fp4 \
+    --fp4-gemm-backend flashinfer_cutlass --page-size 64 \
+    --mamba-scheduler-strategy extra_buffer --mamba-track-interval 64 \
+    --chunked-prefill-size 4096 --max-running-requests {max_num_seqs} \
+    --context-length {max_model_len} --mem-fraction-static {mem_fraction_static} \
+    --reasoning-parser auto --tool-call-parser qwen3_coder --disable-cuda-graph

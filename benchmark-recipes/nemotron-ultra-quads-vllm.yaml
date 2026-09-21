@@ -1,0 +1,24 @@
+recipe_version: "2"
+model: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4
+model_revision: 02462641f13d3af838b904f48195b9bb8a1e4ebc
+runtime: vllm
+min_nodes: 4
+container: docker.io/vllm/vllm-openai@sha256:6fca82f415f2a3270aec7d70b84e0d1b5b0d0e6260c7fd15eb4478d48db06485
+metadata:
+  description: Qualified switched Quads TP4 profile, bounded to 16K and concurrency one.
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 4
+  pipeline_parallel: 1
+  served_model_name: nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4
+  gpu_memory_utilization: 0.75
+  max_model_len: 16384
+  max_num_seqs: 1
+  kv_cache_dtype: fp8
+command: |
+  vllm serve {model} --revision {model_revision} --host {host} --port {port} \
+    --served-model-name {served_model_name} --tensor-parallel-size {tensor_parallel} \
+    --gpu-memory-utilization {gpu_memory_utilization} --max-model-len {max_model_len} \
+    --max-num-seqs {max_num_seqs} --kv-cache-dtype {kv_cache_dtype} --trust-remote-code \
+    --reasoning-parser nemotron_v3 --tool-call-parser qwen3_coder --enable-auto-tool-choice

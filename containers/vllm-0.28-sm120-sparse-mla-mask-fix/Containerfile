@@ -1,0 +1,13 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG UPSTREAM_PATCH_COMMIT=035b178
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28 SM120 sparse-MLA fix" \
+      org.opencontainers.image.description="Pinned upstream vLLM PR 54057 capability declaration for GB10 sparse MLA" \
+      org.opencontainers.image.source="https://github.com/vllm-project/vllm/pull/54057" \
+      io.gb10sor.upstream-patch-commit="${UPSTREAM_PATCH_COMMIT}"
+
+COPY apply-sm120-sparse-mla-fix.py /tmp/apply-sm120-sparse-mla-fix.py
+RUN python3 /tmp/apply-sm120-sparse-mla-fix.py && \
+    rm -f /tmp/apply-sm120-sparse-mla-fix.py

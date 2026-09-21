@@ -1,0 +1,24 @@
+ARG BASE_IMAGE=localhost/gb10sor/vllm-0.28-flashinfer-0.6.17-sm121-fp8-o-proj:candidate
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28.0 / FlashInfer 0.6.18.dev20260819 SM121 canary" \
+      org.opencontainers.image.description="Pinned nightly FlashInfer canary for the DeepSeek V4 SM12x sparse-MLA DSpark specialization" \
+      ai.gb10sor.vllm-version="0.28.0" \
+      ai.gb10sor.flashinfer-version="0.6.18.dev20260819" \
+      ai.gb10sor.flashinfer-release="nightly-v0.6.18-20260819" \
+      ai.gb10sor.flashinfer-required-pr="4380" \
+      ai.gb10sor.sm121-fp8-workaround="e8m0-weight-scale-to-float32-for-triton" \
+      ai.gb10sor.sm121-deepseek-v4-o-proj="float32-dequant-torch-einsum"
+
+COPY wheels/ /opt/gb10sor/wheels/
+
+RUN python3 -m pip install --no-cache-dir --no-index --no-deps --force-reinstall \
+      /opt/gb10sor/wheels/flashinfer_python-0.6.18.dev20260819-py3-none-any.whl \
+      /opt/gb10sor/wheels/flashinfer_cubin-0.6.18.dev20260819-py3-none-any.whl \
+      /opt/gb10sor/wheels/flashinfer_jit_cache-0.6.18.dev20260819+cu130-cp39-abi3-manylinux_2_28_aarch64.whl \
+    && python3 -c 'import importlib.metadata as m; assert m.version("vllm") == "0.28.0"; assert m.version("torch") == "2.13.0+cu130"; assert m.version("flashinfer-python") == "0.6.18.dev20260819"; assert m.version("flashinfer-cubin") == "0.6.18.dev20260819"; assert m.version("flashinfer-jit-cache") == "0.6.18.dev20260819+cu130"' \
+    && grep -Fq 'fp8_einsum_torch as fp8_einsum' \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+    && grep -Fq 'tma_aligned_scales = False' \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+    && rm -rf /opt/gb10sor/wheels

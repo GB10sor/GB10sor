@@ -1,0 +1,67 @@
+diff --git a/vllm/model_executor/layers/quantization/kquant_hybrid.py b/vllm/model_executor/layers/quantization/kquant_hybrid.py
+index 34dec9e2d..33fb59d14 100644
+--- a/vllm/model_executor/layers/quantization/kquant_hybrid.py
++++ b/vllm/model_executor/layers/quantization/kquant_hybrid.py
+@@ -416,18 +416,21 @@ class KQuantHybridConfig(ModelOptNvFp4Config):
+                     )
+             storage_format = qsrt.get("storage_format")
+             storage_schemas = {
+-                "qsrt_atoms_v1": "kquant_kimi_k3_qsrt_atoms_v1",
+-                "qsrt_atoms_v2": "qsrt_kimi_k3_qsrt_atoms_v2",
++                "qsrt_atoms_v1": {"kquant_kimi_k3_qsrt_atoms_v1"},
++                "qsrt_atoms_v2": {
++                    "kquant_kimi_k3_qsrt_atoms_v2",
++                    "qsrt_kimi_k3_qsrt_atoms_v2",
++                },
+             }
+             if storage_format not in storage_schemas:
+                 raise ValueError(
+                     "QSRT storage_format must be 'qsrt_atoms_v1' or "
+                     f"'qsrt_atoms_v2', got {storage_format!r}"
+                 )
+-            expected_schema = storage_schemas[storage_format]
+-            if qsrt.get("schema") != expected_schema:
++            expected_schemas = storage_schemas[storage_format]
++            if qsrt.get("schema") not in expected_schemas:
+                 raise ValueError(
+-                    f"QSRT schema must be {expected_schema!r}, "
++                    f"QSRT schema must be one of {sorted(expected_schemas)!r}, "
+                     f"got {qsrt.get('schema')!r}"
+                 )
+             profile = qsrt.get("profile")
+diff --git a/vllm/model_executor/layers/quantization/kquant_qsrt_atoms_v2.py b/vllm/model_executor/layers/quantization/kquant_qsrt_atoms_v2.py
+index 6410f9586..5e0d7f26b 100644
+--- a/vllm/model_executor/layers/quantization/kquant_qsrt_atoms_v2.py
++++ b/vllm/model_executor/layers/quantization/kquant_qsrt_atoms_v2.py
+@@ -22,7 +22,10 @@ from vllm.model_executor.layers.quantization.kquant_qsrt_atoms import (
+     balanced_atom_partition,
+ )
+ 
+-SCHEMA = "qsrt_kimi_k3_qsrt_atoms_v2"
++SCHEMAS = {
++    "kquant_kimi_k3_qsrt_atoms_v2",
++    "qsrt_kimi_k3_qsrt_atoms_v2",
++}
+ ENCODING = "qsrt_sqg_e4m3"
+ CODEBOOK = "sqg_xor_cheb_t12"
+ PROFILE = "k3x22_k4x2"
+@@ -154,7 +157,6 @@ def read_qsrt_atom_v2_layer_metadata(
+         )
+         expected_metadata = {
+             "format": "pt",
+-            "schema": SCHEMA,
+             "version": str(VERSION),
+             "encoding": ENCODING,
+             "codebook": CODEBOOK,
+@@ -168,6 +170,11 @@ def read_qsrt_atom_v2_layer_metadata(
+             "atom_slots": str(ATOM_SLOTS),
+             "alignment_bytes": "4096",
+         }
++        if metadata.get("schema") not in SCHEMAS:
++            raise ValueError(
++                "QSRT atoms-v2 metadata schema mismatch: "
++                f"{metadata.get('schema')!r} not in {sorted(SCHEMAS)!r}"
++            )
+         if pure_k2 or coupled_h308:
+             expected_metadata.update(
+                 {

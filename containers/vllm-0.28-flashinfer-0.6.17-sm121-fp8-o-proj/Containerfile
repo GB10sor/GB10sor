@@ -1,0 +1,25 @@
+ARG BASE_IMAGE=localhost/gb10sor/vllm-0.28-flashinfer-0.6.17-sm121-fp8:candidate
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28.0 SM121 DeepSeek V4 canary" \
+      org.opencontainers.image.description="Candidate ARM64 runtime with FlashInfer 0.6.17, the narrow E8M0 Triton scale overlay, and a correctness-first SM121 DeepSeek V4 output-projection fallback" \
+      ai.gb10sor.vllm-version="0.28.0" \
+      ai.gb10sor.flashinfer-version="0.6.17" \
+      ai.gb10sor.sm121-fp8-workaround="e8m0-weight-scale-to-float32-for-triton" \
+      ai.gb10sor.sm121-deepseek-v4-o-proj="float32-dequant-torch-einsum"
+
+COPY sm121_einsum_fallback.py \
+  /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/sm121_einsum_fallback.py
+COPY patch-sm121-deepseek-v4-o-proj.py \
+  /opt/gb10sor/patch-sm121-deepseek-v4-o-proj.py
+
+RUN python3 /opt/gb10sor/patch-sm121-deepseek-v4-o-proj.py \
+    && python3 -m py_compile \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/sm121_einsum_fallback.py \
+    && python3 -c 'import importlib.metadata as m; assert m.version("vllm") == "0.28.0"; assert m.version("flashinfer-python") == "0.6.17"' \
+    && grep -Fq 'fp8_einsum_torch as fp8_einsum' \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+    && grep -Fq 'tma_aligned_scales = False' \
+      /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+    && rm -f /opt/gb10sor/patch-sm121-deepseek-v4-o-proj.py

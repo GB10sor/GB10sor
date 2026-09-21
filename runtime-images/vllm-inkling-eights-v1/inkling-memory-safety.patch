@@ -1,0 +1,94 @@
+diff --git a/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py b/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py
+--- a/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py
++++ b/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py
+@@ -50,7 +50,16 @@ def score_mod_rel_bias(
+         rel_idx = rel_dist_0 if rel_dist_0 >= 0 else 0
+         rel_idx = rel_idx if rel_idx < rel_extent else (rel_extent - 1)
+ 
+-        rel_bias = rel_logits[global_q_idx[0], h_idx[0], rel_idx]
++        # Clamp the q-row symmetrically with the kv index above: score_mod
++        # evaluates on ALL tile coordinates before masking, and an out-of-range
++        # global_q_idx wraps the 64-bit gather address (deterministic illegal
++        # access on sm_121a warmup; see vLLM #49049). Bit-identical in-range.
++        n_rows = rel_logits.shape[0]
++        g_row_0 = global_q_idx[0]
++        g_row = g_row_0 if g_row_0 >= 0 else 0
++        g_row = g_row if g_row < n_rows else (n_rows - 1)
++
++        rel_bias = rel_logits[g_row, h_idx[0], rel_idx]
+         rel_bias = Float32(rel_bias) if rel_dist_0 == rel_idx else Float32(0.0)
+         return scores + rel_bias
+ 
+diff --git a/vllm/models/inkling/nvidia/ops/qkvr_prep.py b/vllm/models/inkling/nvidia/ops/qkvr_prep.py
+--- a/vllm/models/inkling/nvidia/ops/qkvr_prep.py
++++ b/vllm/models/inkling/nvidia/ops/qkvr_prep.py
+@@ -4,7 +4,6 @@
+ import torch
+ 
+ from vllm.triton_utils import tl, triton
+-from vllm.utils.torch_utils import aux_stream
+ 
+ LOW_BLOCK_M = 32
+ LOW_BLOCK_N = 64
+@@ -867,33 +866,32 @@ def fused_qkvr_prep(
+         )
+         return q_out, rel_out
+ 
+-    kv_stream = aux_stream()
+-    assert kv_stream is not None
+-    current_stream = torch.cuda.current_stream()
+-    kv_stream.wait_stream(current_stream)
+-    with torch.cuda.stream(kv_stream):
+-        _run_tiled_kv(
++    # Run the KV write on the main stream: the aux-stream fork races the
++    # attention read under un-serialized execution / CUDA graph capture
++    # (vLLM #49049; fault surfaces downstream). Write-before-read by program
++    # order; measured near-zero prefill cost in the upstream PR.
++    _run_tiled_kv(
+             qkvr,
+             k_weight,
+             v_weight,
+             k_norm_weight,
+-            conv_cache,
+-            key_cache,
+-            value_cache,
+-            positions,
+-            seq_idx,
+-            conv_slot_mapping,
+-            conv_block_table,
+-            query_start,
+-            attention_slot_mapping,
+-            eps=eps,
+-            num_q_heads=num_q_heads,
+-            num_kv_heads=num_kv_heads,
+-            head_dim=head_dim,
+-            off_k=off_k,
+-            off_v=off_v,
+-            conv_block_size=conv_block_size,
+-        )
++        conv_cache,
++        key_cache,
++        value_cache,
++        positions,
++        seq_idx,
++        conv_slot_mapping,
++        conv_block_table,
++        query_start,
++        attention_slot_mapping,
++        eps=eps,
++        num_q_heads=num_q_heads,
++        num_kv_heads=num_kv_heads,
++        head_dim=head_dim,
++        off_k=off_k,
++        off_v=off_v,
++        conv_block_size=conv_block_size,
++    )
+     _run_tiled_q(
+         qkvr,
+         q_norm_weight,
+@@ -914,5 +912,4 @@ def fused_qkvr_prep(
+         head_dim=head_dim,
+         d_rel=d_rel,
+     )
+-    current_stream.wait_stream(kv_stream)
+     return q_out, rel_out

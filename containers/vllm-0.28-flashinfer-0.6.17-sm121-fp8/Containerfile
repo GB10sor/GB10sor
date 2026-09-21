@@ -1,0 +1,18 @@
+ARG BASE_IMAGE=localhost/gb10sor/vllm-0.28-flashinfer-0.6.17-cu130:candidate
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28.0 SM121 FP8 canary" \
+      org.opencontainers.image.description="Candidate ARM64 runtime with FlashInfer 0.6.17 and a narrow E8M0-to-float32 Triton scale overlay" \
+      ai.gb10sor.vllm-version="0.28.0" \
+      ai.gb10sor.flashinfer-version="0.6.17" \
+      ai.gb10sor.sm121-fp8-workaround="e8m0-weight-scale-to-float32-for-triton"
+
+COPY patch-sm121-triton-fp8-scale.py /opt/gb10sor/patch-sm121-triton-fp8-scale.py
+
+RUN python3 /opt/gb10sor/patch-sm121-triton-fp8-scale.py \
+    && python3 -m py_compile \
+      /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/scaled_mm/triton.py \
+    && python3 -c 'import importlib.metadata as m; assert m.version("vllm") == "0.28.0"; assert m.version("flashinfer-python") == "0.6.17"' \
+    && grep -Fq 'Bs.dtype == torch.float8_e8m0fnu' \
+      /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/scaled_mm/triton.py \
+    && rm -f /opt/gb10sor/patch-sm121-triton-fp8-scale.py

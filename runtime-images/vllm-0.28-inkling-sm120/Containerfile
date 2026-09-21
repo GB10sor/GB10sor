@@ -1,0 +1,18 @@
+FROM docker.io/vllm/vllm-openai@sha256:2a7cde230b59f3ce6cab33dd245ba6bee41aa87b38c9fe84f966ff24016813ce
+
+COPY inkling-sm120-num-splits.patch /tmp/inkling-sm120-num-splits.patch
+
+RUN set -eu; \
+    target=/usr/local/lib/python3.12/dist-packages/vllm/models/inkling/nvidia/ops/fa4_rel_attention.py; \
+    echo '02eb34e742c0f77142a8ae797ab14e5fef9f76b6907ef1b7b49494c41ac12795  '"$target" | sha256sum -c -; \
+    patch --fuzz=0 --no-backup-if-mismatch -p1 -d /usr/local/lib/python3.12/dist-packages/vllm < /tmp/inkling-sm120-num-splits.patch; \
+    echo 'e5e5bcd46d06681f04b050f1c4c4b1ec61fc83b05c60de85f5c6bcaa869362e1  '"$target" | sha256sum -c -; \
+    rm -f /tmp/inkling-sm120-num-splits.patch
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28 Inkling SM120 split-KV correction" \
+      org.opencontainers.image.description="Exact vLLM 0.28 ARM64 image plus a one-line Inkling SM120 num_splits=1 correction" \
+      org.opencontainers.image.source="https://github.com/vllm-project/vllm" \
+      org.opencontainers.image.revision="2cf0a6915ce544dc493a0990f2ea38d81601128a" \
+      ai.gb10sor.base.manifest="sha256:2a7cde230b59f3ce6cab33dd245ba6bee41aa87b38c9fe84f966ff24016813ce" \
+      ai.gb10sor.patch.preimage="02eb34e742c0f77142a8ae797ab14e5fef9f76b6907ef1b7b49494c41ac12795" \
+      ai.gb10sor.patch.postimage="e5e5bcd46d06681f04b050f1c4c4b1ec61fc83b05c60de85f5c6bcaa869362e1"

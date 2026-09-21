@@ -1,0 +1,58 @@
+recipe_version: "2"
+model: nvidia/DeepSeek-V4-Flash-nvfp4-DSpark
+model_revision: 7ac53121c19350518c374b67e3883ceb189fb26e
+runtime: vllm
+min_nodes: 2
+container: ghcr.io/anemll/dspark-vllm-gx10@sha256:a83948492cf13df455170fb42885f5ef4db54fefe0feff0f841ecbff464ac9d8
+
+metadata:
+  description: Candidate exact-checkpoint GB10 Deuces-direct route; benchmark locally with upload disabled.
+  recipe_source: https://github.com/neronain/deepseek-v4-flash-nvfp4-stacked-on-DGX-Spark/tree/b036a050aec9dd5f976c502104cb01bcc6a51f3b
+  speculation: disabled because this pinned checkpoint lacks the required DSpark marker
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 2
+  pipeline_parallel: 1
+  served_model_name: nvidia/DeepSeek-V4-Flash-nvfp4-DSpark
+  gpu_memory_utilization: 0.85
+  max_model_len: 1048576
+
+command: |
+  VLLM_USE_FLASHINFER_SAMPLER=1 \
+  VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0 \
+  vllm serve {model} \
+    --revision {model_revision} \
+    --host {host} \
+    --port {port} \
+    --served-model-name {served_model_name} \
+    --tensor-parallel-size {tensor_parallel} \
+    --distributed-executor-backend mp \
+    --trust-remote-code \
+    --kv-cache-dtype nvfp4_ds_mla \
+    --block-size 256 \
+    --max-model-len {max_model_len} \
+    --max-num-seqs 6 \
+    --max-num-batched-tokens 8192 \
+    --max-cudagraph-capture-size 24 \
+    --compilation-config '{"cudagraph_mode":"PIECEWISE"}' \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    --moe-backend marlin \
+    --async-scheduling \
+    --enable-chunked-prefill \
+    --enable-prefix-caching \
+    --generation-config vllm \
+    --enable-auto-tool-choice \
+    --tool-call-parser deepseek_v4 \
+    --reasoning-parser deepseek_v4 \
+    --default-chat-template-kwargs '{"enable_thinking":false}'
+
+benchmark:
+  category: performance
+  framework: llama-benchy
+  timeout: 3600
+  args:
+    pp: [2048, 8192, 32768]
+    tg: [32, 128]
+    concurrency: [1, 2, 4]

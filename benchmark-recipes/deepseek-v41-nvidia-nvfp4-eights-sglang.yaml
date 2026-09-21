@@ -1,0 +1,31 @@
+recipe_version: "2"
+model: nvidia/DeepSeek-V4.1-Flash-NVFP4
+model_revision: 3431dde3247c13b5957f682b1e3c6fcae2566079
+runtime: sglang
+min_nodes: 8
+container: docker.io/lmsysorg/sglang@sha256:b4a4745fab5393dc0aca573fe754b86477f57691c9e971390b21102d3d94ebf9
+
+metadata:
+  description: Local switched Eights TP8 candidate, bounded 16K/C1 with SM121 CUTLASS NVFP4 MoE, gated TP8 padding, FP4 low-ratio schedule and SGLANG_SM120_FLASHMLA_BACKEND=triton; launch with the pinned Nix profile and read-only runtime patches.
+
+defaults:
+  port: 8000
+  host: 127.0.0.1
+  tensor_parallel: 8
+  pipeline_parallel: 1
+  served_model_name: nvidia/DeepSeek-V4.1-Flash-NVFP4
+  mem_fraction_static: 0.78
+  max_model_len: 16384
+
+command: |
+  python3 -m sglang.launch_server \
+    --model-path {model} --revision {model_revision} \
+    --host {host} --port {port} \
+    --served-model-name {served_model_name} --tp {tensor_parallel} \
+    --load-format safetensors \
+    --model-loader-extra-config '{"enable_multithread_load":false}' \
+    --reasoning-parser deepseek-v41 --tool-call-parser deepseekv41 \
+    --moe-runner-backend flashinfer_cutlass \
+    --chunked-prefill-size 4096 --mem-fraction-static {mem_fraction_static} \
+    --context-length {max_model_len} --max-running-requests 1 \
+    --disable-cuda-graph

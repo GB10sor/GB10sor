@@ -1,0 +1,13 @@
+framework: llama-benchy
+metadata:
+  description: Local bounded qualification for 8K model services; not an Arena submission profile.
+args:
+  depth: [0, 4096]
+  pp: [2048]
+  tg: [128]
+  concurrency: [1]
+  prefix_caching: true
+  runs: 3
+schedule:
+  - {depth: 0, concurrency: 1}
+  - {depth: 4096, concurrency: 1}

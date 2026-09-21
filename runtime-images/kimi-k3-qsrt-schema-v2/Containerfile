@@ -1,0 +1,26 @@
+FROM ghcr.io/ciprianveg/gb10-vllm/kimi-k3@sha256:85eaf642484daf215176990fc573aed739369d945bc425e00db447d7e25af107
+
+LABEL org.opencontainers.image.title="GB10sor Kimi K3 QSRT schema-v2 SM121 FA2 runtime" \
+      org.opencontainers.image.description="Pinned publisher runtime plus schema-v2 compatibility and SM121 FlashInfer FA2 MLA prefill" \
+      org.opencontainers.image.source="https://github.com/local-inference-lab/vllm" \
+      org.opencontainers.image.revision="a84c7dba2644b9a386638836f5cf05041b6c9d5b" \
+      ai.gb10sor.base.digest="sha256:85eaf642484daf215176990fc573aed739369d945bc425e00db447d7e25af107" \
+      ai.gb10sor.schema.patch.sha256="e1e99d04a3a4f23cafd5676fa8a2090582e4005c3a3cae177274d3be19ba889d" \
+      ai.gb10sor.sm121-fa2.patch.sha256="9228173d116736119e6e7372599d02a75bca15438ca0152c8c67881de85cca96"
+
+COPY accept-both-qsrt-atoms-v2-schemas.patch /tmp/accept-both-qsrt-atoms-v2-schemas.patch
+COPY enable-sm121-flashinfer-fa2-prefill.patch /tmp/enable-sm121-flashinfer-fa2-prefill.patch
+RUN patch --batch --forward -d /opt/kimi-k3/vllm -p1 \
+      < /tmp/accept-both-qsrt-atoms-v2-schemas.patch \
+    && patch --batch --forward -d /opt/kimi-k3/vllm -p1 \
+      < /tmp/enable-sm121-flashinfer-fa2-prefill.patch \
+    && grep -Fq '"kquant_kimi_k3_qsrt_atoms_v2"' \
+      /opt/kimi-k3/vllm/vllm/model_executor/layers/quantization/kquant_hybrid.py \
+    && grep -Fq 'SCHEMAS = {' \
+      /opt/kimi-k3/vllm/vllm/model_executor/layers/quantization/kquant_qsrt_atoms_v2.py \
+    && grep -Fq 'backend="fa2"' \
+      /opt/kimi-k3/vllm/vllm/v1/attention/backends/mla/prefill/flashinfer.py \
+    && grep -Fq 'qk_nope_head_dim=192' \
+      /opt/kimi-k3/vllm/vllm/v1/attention/backends/mla/prefill/flashinfer.py \
+    && rm -f /tmp/accept-both-qsrt-atoms-v2-schemas.patch \
+      /tmp/enable-sm121-flashinfer-fa2-prefill.patch

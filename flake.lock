@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1788690626,
+        "narHash": "sha256-+v4I4LawmRD/mVxO7QIAerRrCkElp3YImzWkkUnvOTg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c25784012c9982bca5b3e0de87e90bbdac8927d3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c25784012c9982bca5b3e0de87e90bbdac8927d3",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "sglang-omni": "sglang-omni"
+      }
+    },
+    "sglang-omni": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787675828,
+        "narHash": "sha256-Pn7SigGrByN16RlmkjHUFlUnTVicGLgbRqT9gVe/gJ0=",
+        "owner": "sgl-project",
+        "repo": "sglang-omni",
+        "rev": "5207c5dbc45bd7fe8062bc9a222ea6121f990349",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sgl-project",
+        "repo": "sglang-omni",
+        "rev": "5207c5dbc45bd7fe8062bc9a222ea6121f990349",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

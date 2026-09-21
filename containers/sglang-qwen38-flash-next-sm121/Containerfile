@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+ARG BASE_IMAGE=docker.io/lmsysorg/sglang@sha256:12d3392bdc8be8d35e9a95f191df6aef99c5114bdbefd41bfdc7e760e6d25ec1
+FROM ${BASE_IMAGE}
+
+ARG BASE_IMAGE
+ARG SGLANG_COMMIT=d91c3682b0b429e4c70df63cd57f819588ce29b0
+ARG PATCH_SOURCE_COMMIT=dbdf4523ddc1de870ea201a4e647e91cceeab96a
+
+LABEL org.opencontainers.image.title="GB10sor Qwen3.8 Flash-Next SM121 SGLang candidate" \
+      org.opencontainers.image.source="https://github.com/sgl-project/sglang" \
+      org.opencontainers.image.revision="${SGLANG_COMMIT}" \
+      ai.gb10sor.base-image="${BASE_IMAGE}" \
+      ai.gb10sor.patch-id="qsa-sm121-flashinfer-auto-v1" \
+      ai.gb10sor.patch-source="https://github.com/tonyd2wild/qwen3.8-flash-next-nvfp4-dgx-spark/commit/${PATCH_SOURCE_COMMIT}" \
+      ai.gb10sor.qualification="candidate-not-model-qualified"
+
+COPY patch-sm121-qsa.py /opt/gb10sor/patch-sm121-qsa.py
+
+# The day-zero Qwen4Exp image deliberately falls back to FA4 on SM121. That
+# fallback fails during the checkpoint warmup reported by the reference recipe.
+# Extend only the architecture guard so FlashInfer's supported SM121 auto/XQA
+# decode path is selected. The patch program verifies both source and output
+# digests and refuses to touch a different SGLang tree.
+RUN python3 /opt/gb10sor/patch-sm121-qsa.py \
+    && rm /opt/gb10sor/patch-sm121-qsa.py
+
+ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
+CMD ["/bin/bash"]

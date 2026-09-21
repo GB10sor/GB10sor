@@ -1,0 +1,20 @@
+FROM nvcr.io/nvidia/cuda-dl-base@sha256:3c4abc135ab60255ace81717a2eb41c313ebe2c344c8a57099aa728c76dde454
+
+ARG GB10_ACCEPT_NVIDIA_TENSORRT_SLA=no
+
+LABEL ai.gb10sor.release.channel="framework-edge" \
+      ai.gb10sor.base.image="nvcr.io/nvidia/cuda-dl-base@sha256:3c4abc135ab60255ace81717a2eb41c313ebe2c344c8a57099aa728c76dde454" \
+      ai.gb10sor.cuda.version="13.3.1.008" \
+      ai.gb10sor.tensorrt.version="11.2.1.2" \
+      ai.gb10sor.tensorrt.license="NVIDIA Software License Agreement and TensorRT Supplement" \
+      com.nvidia.tensorrt.version="11.2.1.2"
+
+COPY artifacts.json install.py /opt/gb10sor/tensorrt-edge/
+
+RUN test "${GB10_ACCEPT_NVIDIA_TENSORRT_SLA}" = yes \
+    && GB10_ACCEPT_NVIDIA_TENSORRT_SLA=yes \
+       python3 /opt/gb10sor/tensorrt-edge/install.py
+
+ENV TRT_VERSION=11.2.1.2 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_INDEX=1

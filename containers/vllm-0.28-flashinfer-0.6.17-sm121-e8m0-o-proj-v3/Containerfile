@@ -1,0 +1,17 @@
+ARG BASE_IMAGE=localhost/gb10sor/vllm-0.28-flashinfer-0.6.17-sm121-fp8-o-proj@sha256:b75a8d03df0b8ffd96686392d0e48faf548aab15174cc659999e5f4cb9b331e3
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="GB10sor vLLM 0.28.0 SM121 DeepSeek V4 combined fallback v3" \
+      org.opencontainers.image.description="FlashInfer 0.6.17 runtime with fail-closed E8M0/uint8 Triton scale conversion using the vLLM 0.28 fp8_utils helper and the qualified SM121 output-projection fallback" \
+      ai.gb10sor.vllm-version="0.28.0" \
+      ai.gb10sor.flashinfer-version="0.6.17" \
+      ai.gb10sor.sm121-fp8-workaround="e8m0-or-uint8-weight-scale-upcast-fp8-utils" \
+      ai.gb10sor.sm121-deepseek-v4-o-proj="float32-dequant-torch-einsum"
+
+COPY patch_triton_scale_v3.py /tmp/patch_triton_scale_v3.py
+RUN python3 -I -B /tmp/patch_triton_scale_v3.py \
+    && python3 -m py_compile /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/scaled_mm/triton.py \
+    && grep -Fq 'quantization.utils.fp8_utils import' /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/scaled_mm/triton.py \
+    && grep -Fq '_upcast_e8m0_to_fp32' /usr/local/lib/python3.12/dist-packages/vllm/model_executor/kernels/linear/scaled_mm/triton.py \
+    && grep -Fq 'fp8_einsum_torch as fp8_einsum' /usr/local/lib/python3.12/dist-packages/vllm/models/deepseek_v4/nvidia/ops/o_proj.py \
+    && rm /tmp/patch_triton_scale_v3.py
